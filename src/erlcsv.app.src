@@ -1,0 +1,11 @@
+%% -*- Erlang -*-
+{application, erlcsv,
+ [
+  {description, "Erlang binary CSV parser with continuation support     "},
+  {vsn, git},
+  {modules,
+   [erlcsv]},
+  {applications,
+   [kernel,
+    stdlib]},
+  {env, []}]}.
