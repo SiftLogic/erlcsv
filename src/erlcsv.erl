@@ -94,7 +94,7 @@ next(Cont = #cont{data = Data}) ->
     do_parse(Data,  #line{}, Cont).
 
 %% Field too big
-do_parse(_, #line{bytes = Bytes}, Cont) when Bytes > ?MAX_FIELD_SIZE ->
+do_parse(_, #line{bytes = Bytes}, _Cont) when Bytes > ?MAX_FIELD_SIZE ->
     {error, field_too_long, Bytes};
 %% No data; get more from file
 do_parse(<<>> = Data, Line, Cont) ->
@@ -187,12 +187,12 @@ do_parse(<<Separator, Rest/binary>>,
 %% A double quote in any other place than the already managed is an error
 do_parse(<<$", _Rest/binary>>,
          #line{bytes = Bytes},
-         Cont = #cont{strict_quoting = true}) ->
+         _Cont = #cont{strict_quoting = true}) ->
     {error, bad_record, Bytes + 1};
 %% Anything other than whitespace or line ends in post_quoted state is an error
 do_parse(<<_, _Rest/binary>>,
          #line{state = post_quoted, bytes = Bytes},
-         Cont = #cont{strict_quoting = true}) ->
+         _Cont = #cont{strict_quoting = true}) ->
     {error, bad_record, Bytes + 1};
 %% Accumulate Field value
 do_parse(<<X, Rest/binary>>,
