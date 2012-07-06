@@ -149,7 +149,7 @@ do_parse(<<X, Rest/binary>>,
     do_parse(Rest,
              inc(L#line{current_field = [X | Field]}, 1),
              Cont);
-do_parse(<<>>, #line{state = quoted, bytes = Bytes}, _Cont)->
+do_parse(eof, #line{state = quoted, bytes = Bytes}, _Cont)->
     {error, unmatched_quote, Bytes + 1};
 %% END quoted STATE
 %% BEGIN post_quoted STATE
@@ -161,7 +161,7 @@ do_parse(<<$ , Rest/binary>>,
 %% Comma and New line handling
 %% BEGIN Common code for post_quoted and normal STATE
 %% EOF in a new line, return the records
-do_parse(<<>>, L, Cont)->
+do_parse(eof, L, Cont)->
     return(eof, L, Cont);
 %% EOL =:= new record
 do_parse(<<$\r>> = Data, L = #line{k_fun_used = false}, Cont)->
@@ -215,7 +215,13 @@ return(Rest,
 
 run_continuation(Data, Cont = #cont{k_fun = KFun, k_state = KState}) ->
     {NewData, NewKState} = KFun(KState),
-    {<<Data/binary, NewData/binary>>, Cont#cont{k_state = NewKState}}.
+    NewCont = Cont#cont{k_state = NewKState},
+    case {Data, NewData} of
+        {<<>>, <<>>} -> {eof, NewCont};
+        {<<>>, eof} -> {eof, NewCont};
+        {_, eof} -> {Data, NewCont};
+        {_, _} -> {<<Data/binary, NewData/binary>>, NewCont}
+    end.
 
 inc(L = #line{bytes = Bytes}, MoreBytes) ->
     L#line{bytes = Bytes + MoreBytes}.
