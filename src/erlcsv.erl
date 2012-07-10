@@ -203,14 +203,14 @@ do_parse(<<X, Rest/binary>>,
 return(Rest,
        #line{current_field = Field, current_record = Record, bytes = Bytes},
        Cont) ->
-    Record = lists:reverse([lists:reverse(Field)|Record]),
+    Return = lists:reverse([lists:reverse(Field)|Record]),
     case Rest =:= eof of
         true ->
             case Bytes =:= 0 of
                 true -> eof;
-                false -> {ok, Record, Bytes, eof}
+                false -> {ok, Return, Bytes, eof}
             end;
-        false -> {ok, Record, Bytes, Cont}
+        false -> {ok, Return, Bytes, Cont}
     end.
 
 run_continuation(Data, Cont = #cont{k_fun = KFun, k_state = KState}) ->
