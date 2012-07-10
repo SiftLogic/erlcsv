@@ -210,7 +210,7 @@ return(Rest,
                 true -> eof;
                 false -> {ok, Return, Bytes, eof}
             end;
-        false -> {ok, Return, Bytes, Cont}
+        false -> {ok, Return, Bytes, Cont#cont{data = Rest}}
     end.
 
 run_continuation(Data, Cont = #cont{k_fun = KFun, k_state = KState}) ->
