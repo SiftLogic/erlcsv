@@ -46,6 +46,7 @@
 
 %% API
 -export([new/1, new/2, next/1]).
+-export([get_continuation_state/1]).
 
 -record(line, {state = field_start, % field_start|normal|quoted|post_quoted
                current_field  = [],
@@ -86,12 +87,14 @@ new(Bin, Opts) when is_binary(Bin) ->
 %% @doc Parses the first CSV record in a file into a list of fields.
 %% Returns the parsed record with the number of processed Bytes and a
 %% continuation for getting the next record
--spec next(eof) -> eof;
-          (#cont{})  -> {ok, {[string()], non_neg_integer()}, #cont{}} | eof.
-next(eof) ->
+-spec next(#cont{})  -> {ok, {[string()], non_neg_integer()}, #cont{}} | eof.
+next(#cont{data = eof}) ->
     eof;
 next(Cont = #cont{data = Data}) ->
     do_parse(Data,  #line{}, Cont).
+
+get_continuation_state(#cont{k_state = KState}) ->
+    KState.
 
 %% Field too big
 do_parse(_, #line{bytes = Bytes}, _Cont) when Bytes > ?MAX_FIELD_SIZE ->
@@ -208,7 +211,7 @@ return(Rest,
         true ->
             case Bytes =:= 0 of
                 true -> eof;
-                false -> {ok, Return, Bytes, eof}
+                false -> {ok, Return, Bytes, Cont#cont{data = eof}}
             end;
         false -> {ok, Return, Bytes, Cont#cont{data = Rest}}
     end.
