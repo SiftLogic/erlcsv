@@ -49,7 +49,7 @@
 -export([get_continuation_state/1]).
 
 -record(line, {state = field_start, % field_start|normal|quoted|post_quoted
-               current_field  = [],
+               current_field  = <<>>,
                current_record = [],
                bytes = 0,
                k_fun_used = false}).
@@ -109,14 +109,14 @@ do_parse(<<$\s, Rest/binary>>,
          L = #line{state = field_start, current_field = Field},
          Cont)->
     do_parse(Rest,
-             inc(L#line{current_field = [$  | Field]}, 1),
+             inc(L#line{current_field = <<Field/binary, $ >>}, 1),
              Cont);
 %% It's a quoted field, discard previous whitespaces
 do_parse(<<$", Rest/binary>>,
          L = #line{state = field_start},
          Cont = #cont{strict_quoting = true}) ->
     do_parse(Rest,
-             inc(L#line{state = quoted, current_field = []}, 1),
+             inc(L#line{state = quoted, current_field = <<>>}, 1),
              Cont);
 %% Anything else is a nonquoted field
 do_parse(Bin, L = #line{state = field_start}, Cont) ->
@@ -135,9 +135,10 @@ do_parse(<<$", $", Rest/binary>>,
          L = #line{state = quoted,
                    current_field = Field},
          Cont = #cont{strict_quoting = true}) ->
-    do_parse(Rest,
-             inc(L#line{current_field = [$" | Field], k_fun_used = false}, 2),
-             Cont);
+    do_parse(
+      Rest,
+      inc(L#line{current_field = <<Field/binary, $">>, k_fun_used = false}, 2),
+      Cont);
 %% End of quoted field
 do_parse(<<$", Rest/binary>>,
          L = #line{state = quoted},
@@ -150,7 +151,7 @@ do_parse(<<X, Rest/binary>>,
          L = #line{state = quoted, current_field = Field},
          Cont) ->
     do_parse(Rest,
-             inc(L#line{current_field = [X | Field]}, 1),
+             inc(L#line{current_field = <<Field/binary, X>>}, 1),
              Cont);
 do_parse(eof, #line{state = quoted, bytes = Bytes}, _Cont)->
     {error, unmatched_quote, Bytes + 1};
@@ -184,8 +185,8 @@ do_parse(<<Separator, Rest/binary>>,
          Cont = #cont{separator = Separator})->
     do_parse(Rest,
              inc(L#line{state = field_start,
-                        current_field = [],
-                        current_record = [lists:reverse(Field) | Record]}, 1),
+                        current_field = <<>>,
+                        current_record = [Field | Record]}, 1),
              Cont);
 %% A double quote in any other place than the already managed is an error
 do_parse(<<$", _Rest/binary>>,
@@ -201,12 +202,12 @@ do_parse(<<_, _Rest/binary>>,
 do_parse(<<X, Rest/binary>>,
          L = #line{state = normal, current_field = Field},
          Cont)->
-    do_parse(Rest, inc(L#line{current_field = [X | Field]}, 1), Cont).
+    do_parse(Rest, inc(L#line{current_field = <<Field/binary, X>>}, 1), Cont).
 
 return(Rest,
        #line{current_field = Field, current_record = Record, bytes = Bytes},
        Cont) ->
-    Return = lists:reverse([lists:reverse(Field)|Record]),
+    Return = lists:reverse([Field | Record]),
     case Rest =:= eof of
         true ->
             case Bytes =:= 0 of
