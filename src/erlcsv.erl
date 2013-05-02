@@ -87,7 +87,7 @@ new(Bin, Opts) when is_binary(Bin) ->
 %% @doc Parses the first CSV record in a file into a list of fields.
 %% Returns the parsed record with the number of processed Bytes and a
 %% continuation for getting the next record
--spec next(#cont{})  -> {ok, {[string()], non_neg_integer()}, #cont{}} | eof.
+-spec next(#cont{})  -> {ok, {[binary()], non_neg_integer()}, #cont{}} | eof.
 next(#cont{data = eof}) ->
     eof;
 next(Cont = #cont{data = Data}) ->
