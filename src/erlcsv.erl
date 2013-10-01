@@ -1,4 +1,4 @@
-%%% https://github.com/SiftLogic/erl_csv
+%%% https://github.com/SiftLogic/erlcsv
 %%%
 %%% This code as been 'forked' from the website
 %%% http://ppolv.wordpress.com/2008/02/25/parsing-csv-in-erlang/
