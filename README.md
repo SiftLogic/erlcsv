@@ -90,9 +90,9 @@ This version would obviously keep the whole file in memory.
 
 `get_continuation_state(State) -> function_state()`
 
-> This function returns the last continuation state.  This is needed
-> for instance when the continuation state is a
-> [cowboy](https://github.com/extend/cowboy) Req.  The newest version
+> This function returns the last continuation state.  For example,
+> when the continuation state is a
+> [cowboy](https://github.com/extend/cowboy) Req, the latest version
 > of the Req is needed for sending a response back to the requestor.
 
 >Types:
