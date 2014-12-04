@@ -66,10 +66,17 @@ new(Bin) ->
     new(Bin, []).
 
 new(Bin, Opts) when is_binary(Bin) ->
+    AcceptedSeparators = [$,, $;, $|, $\t],
     Separator =
         case lists:keyfind(separator, 1, Opts) of
             false -> $,;
-            {separator, Sep} when is_integer(Sep) -> Sep
+            {separator, Sep} when is_integer(Sep) ->
+                Sep;
+            {separator, Sep} ->
+                case lists:member(Sep, AcceptedSeparators) of
+                    true -> Sep;
+                    false -> $,
+                end
         end,
     {KFun, KState} =
         case lists:keyfind(continuation_function, 1, Opts) of
