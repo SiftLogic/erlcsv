@@ -1,7 +1,7 @@
 erlcsv
 ======
 
-`erlcsv` is a csv parser in Erlang.  Its main advantage is that it
+`erlcsv` is a csv parser and row formatter in Erlang.  Its main advantage is that it
 allows for working on a stream and as such doesn't need to keep the
 whole file in memory.
 
@@ -10,6 +10,15 @@ continuation data needed to get the next row.
 
 Supports UTF-8 as well as all Latin-X character sets.
 
+`erlcsv:format_row/1` accepts a list or tuple of values and returns
+a correctly escaped 'row' of csv data for writing to a file.
+
+Example
+```erlang
+{ok, Fp} = file:open(Filename, [write]),
+[file:write(Fp, erlcsv:format_row(Row)) || Row <- Rows],
+file:close(Fp).
+```
 
 A simple usage of erlcsv that accumulates the whole file in memory
 while reading chunks from an input file.  If you do chunkwise reading
