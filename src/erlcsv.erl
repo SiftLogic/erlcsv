@@ -45,6 +45,7 @@
 -module(erlcsv).
 
 %% API
+-export([format_row/1]).
 -export([new/1, new/2, next/1]).
 -export([get_continuation_state/1]).
 
@@ -238,3 +239,91 @@ run_continuation(Data, Cont = #cont{k_fun = KFun, k_state = KState}) ->
 
 inc(L = #line{bytes = Bytes}, MoreBytes) ->
     L#line{bytes = Bytes + MoreBytes}.
+
+format_row(Row) when is_tuple(Row) ->
+    format_row(tuple_to_list(Row));
+format_row(Row) ->
+    [string:join([case Field of
+                      null -> "";
+                      true -> "1";
+                      false -> "0";
+                      {A,B,C,D} = IpAddress
+                        when is_integer(A),
+                             is_integer(B),
+                             is_integer(C),
+                             is_integer(D) ->
+                          inet_parse:ntoa(IpAddress);
+                      {A,B,C,D,E,F,G,H} = IpAddress
+                        when is_integer(A), is_integer(B),
+                             is_integer(C), is_integer(D),
+                             is_integer(E), is_integer(F),
+                             is_integer(G), is_integer(H) ->
+                          inet_parse:ntoa(IpAddress);
+                      {{_,_,_},{_,_,_}} = DateTime ->
+                          format_datetime(DateTime);
+                      {Long, Lat} when is_number(Long), is_number(Lat) ->
+                          "(" ++ to_list(Long) ++ ":" ++ to_list(Lat) ++ ")";
+                      {_, _, _} = Date ->
+                          format_date(Date);
+                      _ when is_number(Field);
+                             is_list(Field);
+                             is_atom(Field);
+                             is_binary(Field) ->
+                          SField = to_list(Field),
+                          StrField = string:strip(SField),
+                          case lists:any(fun($,) -> true;
+                                            ($\n) -> true;
+                                            ($\r) -> true;
+                                            ($") -> true;
+                                            (_) -> false
+                                         end, StrField) of
+                              true ->
+                                  [$", csv_escape_field(StrField), $"];
+                              false ->
+                                  StrField
+                          end;
+                      _Other ->
+                          io:format("unhandled Field value discarded: ~p~n", [Field]),
+                          ""
+                  end || Field <- Row], ","), $\n].
+
+csv_escape_field(Field) ->
+    [case Ch of
+         $" -> [$", $"];
+         $\n -> $ ;
+         _ -> Ch
+     end || Ch <- Field].
+
+format_datetime(Time) when is_binary(Time) ->
+    Time;
+format_datetime(Time) ->
+    {{YYYY, MM, DD}, {H, M, S}} =
+        case Time of
+            {_,_,_} -> calendar:now_to_universal_time(Time);
+            {{_,_,_},{_,_,_}} -> Time
+        end,
+    io_lib:format("~4..0b-~2..0b-~2..0b ~2..0b:~2..0b:~2..0b",
+                  [YYYY, MM, DD, H, M, round(S)]).
+
+format_date({Y, M, D}) ->
+    io_lib:format("~4..0b-~2..0b-~2..0b", [Y, M, D]);
+format_date({{Y, M, D}, {_, _, _}}) ->
+    io_lib:format("~4..0b-~2..0b-~2..0b", [Y, M, D]).
+
+to_list(V) ->
+    case V of
+        V when is_list(V) ->
+            V;
+        V when is_float(V) ->
+            float_to_list(V);
+        V when is_integer(V) ->
+            integer_to_list(V);
+        V when is_atom(V) ->
+            atom_to_list(V);
+        V when is_binary(V) ->
+            binary_to_list(V);
+        V when is_tuple(V) ->
+            tuple_to_list(V);
+        V when is_map(V) ->
+            maps:to_list(V)
+    end.
